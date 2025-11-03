@@ -41,11 +41,12 @@ class CFIPAutomation:
             self.wait = None
             print("本地环境，跳过Chrome初始化")
     
-    def get_utc_minus_8_time(self):
-        """获取UTC-8时间"""
+    def get_beijing_time(self):
+        """获取北京时间（东八区）"""
+        # 方法1：使用UTC+8
         utc_time = datetime.now(timezone.utc)
-        utc_minus_8 = utc_time - timedelta(hours=8)
-        return utc_minus_8.strftime('%Y-%m-%d %H:%M:%S UTC-8')
+        beijing_time = utc_time + timedelta(hours=8)
+        return beijing_time.strftime('%Y-%m-%d %H:%M:%S 北京时间')
     
     def open_website(self):
         """打开优选IP网站"""
@@ -290,9 +291,9 @@ class CFIPAutomation:
             return False
         
         with open('ip.txt', 'a', encoding='utf-8') as f:
-            # 使用UTC-8时间
-            utc_minus_8_time = self.get_utc_minus_8_time()
-            f.write(f"\n# CF官方列表优选IP - {utc_minus_8_time}\n")
+            # 使用北京时间
+            beijing_time = self.get_beijing_time()
+            f.write(f"\n# CF官方列表优选IP - {beijing_time}\n")
             f.write(f"# 统计信息: {results.get('stats', '获取失败')}\n")
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
