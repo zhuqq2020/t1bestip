@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from datetime import datetime, timezone, timedelta
 
 class CFIPAutomation:
     def __init__(self):
@@ -39,6 +40,12 @@ class CFIPAutomation:
             self.driver = None
             self.wait = None
             print("本地环境，跳过Chrome初始化")
+    
+    def get_utc_minus_8_time(self):
+        """获取UTC-8时间"""
+        utc_time = datetime.now(timezone.utc)
+        utc_minus_8 = utc_time - timedelta(hours=8)
+        return utc_minus_8.strftime('%Y-%m-%d %H:%M:%S UTC-8')
     
     def open_website(self):
         """打开优选IP网站"""
@@ -283,10 +290,9 @@ class CFIPAutomation:
             return False
         
         with open('ip.txt', 'a', encoding='utf-8') as f:
-            # 使用UTC时间
-            import datetime
-            utc_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-            f.write(f"\n# CF官方列表优选IP - {utc_time}\n")
+            # 使用UTC-8时间
+            utc_minus_8_time = self.get_utc_minus_8_time()
+            f.write(f"\n# CF官方列表优选IP - {utc_minus_8_time}\n")
             f.write(f"# 统计信息: {results.get('stats', '获取失败')}\n")
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
