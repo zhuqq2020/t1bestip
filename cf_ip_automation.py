@@ -337,16 +337,14 @@ class CFIPAutomation:
                 f.write("# " + "="*50 + "\n")
             
             beijing_time = self.get_beijing_time()
-            f.write(f"\n# CF官方列表优选IP - {beijing_time}\n")
+            f.write(f"# CF官方列表优选IP - {beijing_time}\n")
             f.write(f"# 统计信息: {results.get('stats', '获取失败')}\n")
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
-            
             ip_text = results.get('ips', [''])[0]
             processed_ip_text = self.process_ip_text(ip_text)
             f.write(processed_ip_text)
-            
-            f.write("# " + "="*50 + "\n")
+            f.write("\n" + "# " + "="*50)
         
         print(f"结果已保存到 ip.txt 文件 (模式: {write_mode})")
         return True
@@ -402,3 +400,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
