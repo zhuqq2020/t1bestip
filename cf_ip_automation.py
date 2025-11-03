@@ -48,6 +48,12 @@ class CFIPAutomation:
         beijing_time = utc_time + timedelta(hours=8)
         return beijing_time.strftime('%Y-%m-%d %H:%M:%S 北京时间')
     
+    def get_timestamp(self):
+        """获取时间戳，格式：YYYYMMDDHHMM"""
+        utc_time = datetime.now(timezone.utc)
+        beijing_time = utc_time + timedelta(hours=8)
+        return beijing_time.strftime('%Y%m%d%H%M')
+    
     def open_website(self):
         """打开优选IP网站"""
         if not self.driver:
@@ -284,6 +290,15 @@ class CFIPAutomation:
             print(f"获取IP列表失败: {e}")
             return []
     
+    def process_ip_text(self, ip_text):
+        """处理IP文本，在官方优选后面添加时间戳"""
+        timestamp = self.get_timestamp()
+        print(f"当前时间戳: {timestamp}")
+        
+        # 在"官方优选"后面添加时间戳
+        processed_text = ip_text.replace('官方优选', f'官方优选{timestamp}')
+        return processed_text
+    
     def save_results_to_file(self, results):
         """保存结果到文件"""
         if not results:
@@ -298,9 +313,10 @@ class CFIPAutomation:
             f.write(f"# 测试进度: {results.get('progress', '获取失败')}\n")
             f.write(f"# {'='*50}\n")
             
-            # 直接保存网站原始输出，不做任何处理
+            # 处理IP文本，在官方优选后面添加时间戳
             ip_text = results.get('ips', [''])[0]
-            f.write(ip_text)
+            processed_ip_text = self.process_ip_text(ip_text)
+            f.write(processed_ip_text)
         
         print(f"结果已保存到 ip.txt 文件")
         return True
