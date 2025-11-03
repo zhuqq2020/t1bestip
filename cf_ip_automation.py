@@ -391,7 +391,6 @@ class CFIPAutomation:
             ip_text = results.get('ips', [''])[0]
             processed_ip_text = self.process_ip_text(ip_text)
             f.write(processed_ip_text)
-            f.write("# " + "="*50 + "\n")
 
         print(f"结果已保存到 ip.txt 文件 (模式: {write_mode})")
         return True
@@ -456,5 +455,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
