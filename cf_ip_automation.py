@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from datetime import datetime, timezone, timedelta
+import re
 
 class CFIPAutomation:
     def __init__(self):
@@ -41,9 +42,71 @@ class CFIPAutomation:
             self.wait = None
             print("本地环境，跳过Chrome初始化")
     
+    def parse_time_from_content(self, time_str):
+        """从时间字符串解析datetime对象"""
+        try:
+            # 匹配格式：2025-11-03 14:22:32 北京时间
+            pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) 北京时间'
+            match = re.search(pattern, time_str)
+            if match:
+                time_part = match.group(1)
+                # 将字符串转换为datetime对象（北京时间）
+                dt = datetime.strptime(time_part, '%Y-%m-%d %H:%M:%S')
+                # 北京时间是UTC+8，所以转换为UTC时间进行比较
+                dt_utc = dt - timedelta(hours=8)
+                dt_utc = dt_utc.replace(tzinfo=timezone.utc)
+                return dt_utc
+        except Exception as e:
+            print(f"解析时间失败: {e}")
+        return None
+    
+    def should_overwrite_file(self):
+        """判断是否应该覆盖文件（基于内容中的时间戳）"""
+        if not os.path.exists('ip.txt'):
+            print("ip.txt文件不存在，将创建新文件")
+            return True
+        
+        try:
+            with open('ip.txt', 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 查找所有的时间戳行
+            time_pattern = r'# CF官方列表优选IP - (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} 北京时间)'
+            matches = re.findall(time_pattern, content)
+            
+            if not matches:
+                print("未找到时间戳，将覆盖文件")
+                return True
+            
+            # 获取最新的时间戳（最后一条记录）
+            latest_time_str = matches[-1]
+            latest_time = self.parse_time_from_content(latest_time_str)
+            
+            if not latest_time:
+                print("无法解析时间戳，将覆盖文件")
+                return True
+            
+            current_time = datetime.now(timezone.utc)
+            time_diff = (current_time - latest_time).days
+            
+            print(f"文件中最新记录时间: {latest_time} (UTC)")
+            print(f"当前时间: {current_time} (UTC)")
+            print(f"时间差: {time_diff}天")
+            
+            # 如果最新记录超过7天，则覆盖文件
+            if time_diff >= 7:
+                print("最新记录已超过7天，将覆盖文件内容")
+                return True
+            else:
+                print(f"最新记录在{time_diff}天内，将追加内容")
+                return False
+                
+        except Exception as e:
+            print(f"读取文件失败: {e}，将覆盖文件")
+            return True
+    
     def get_beijing_time(self):
         """获取北京时间（东八区）"""
-        # 方法1：使用UTC+8
         utc_time = datetime.now(timezone.utc)
         beijing_time = utc_time + timedelta(hours=8)
         return beijing_time.strftime('%Y-%m-%d %H:%M:%S 北京时间')
@@ -305,7 +368,18 @@ class CFIPAutomation:
             print("没有结果可保存")
             return False
         
-        with open('ip.txt', 'a', encoding='utf-8') as f:
+        # 判断文件打开模式
+        write_mode = 'w' if self.should_overwrite_file() else 'a'
+        print(f"文件打开模式: {write_mode}")
+        
+        with open('ip.txt', write_mode, encoding='utf-8') as f:
+            # 如果是覆盖模式，添加文件头信息
+            if write_mode == 'w':
+                f.write("# CloudFlare IP优选结果\n")
+                f.write("# 自动更新于每周首次执行\n")
+                f.write(f"# 文件创建时间: {self.get_beijing_time()}\n")
+                f.write("# " + "="*50 + "\n")
+            
             # 使用北京时间
             beijing_time = self.get_beijing_time()
             f.write(f"\n# CF官方列表优选IP - {beijing_time}\n")
@@ -318,7 +392,7 @@ class CFIPAutomation:
             processed_ip_text = self.process_ip_text(ip_text)
             f.write(processed_ip_text)
         
-        print(f"结果已保存到 ip.txt 文件")
+        print(f"结果已保存到 ip.txt 文件 (模式: {write_mode})")
         return True
     
     def run_automation(self):
